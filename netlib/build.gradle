@@ -1,0 +1,41 @@
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+apply plugin: 'com.github.dcendents.android-maven'
+group='com.github.ChestnutPlus'
+
+def app = rootProject.ext.application
+
+android {
+    compileSdkVersion app.compileSdkVersion
+
+    defaultConfig {
+        minSdkVersion app.minSdkVersion
+        targetSdkVersion app.targetSdkVersion
+        versionCode 100
+        versionName "1.0.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "androidx.core:core-ktx:${rootProject.ext.androidx_ktx_version}"
+    implementation "androidx.appcompat:appcompat:${rootProject.ext.androidx_appcompat_version}"
+    implementation "com.squareup.okhttp3:okhttp:${rootProject.ext.okhttp_version}"
+    implementation "com.squareup.retrofit2:retrofit:${rootProject.ext.retrofir_version}"
+    implementation "com.squareup.retrofit2:converter-gson:${rootProject.ext.retrofir_gson_version}"
+    implementation "com.squareup.retrofit2:adapter-rxjava3:${rootProject.ext.retrofir_adapter_version}"
+    implementation "io.reactivex.rxjava3:rxandroid:${rootProject.ext.rxandroid_version}"
+    implementation "io.reactivex.rxjava3:rxjava:${rootProject.ext.rxjava_version}"
+    implementation "com.squareup.okhttp3:logging-interceptor:${rootProject.ext.log_interceptor_version}"
+}
+repositories {
+    mavenCentral()
+}
