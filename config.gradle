@@ -7,7 +7,6 @@ ext {
     retrofir_version = "2.9.0"
     retrofir_gson_version = "2.6.2"
     retrofir_adapter_version = "2.9.0"
-    log_interceptor_version = "3.9.0"
     rxandroid_version = "3.0.0"
     rxjava_version = "3.0.8"
 

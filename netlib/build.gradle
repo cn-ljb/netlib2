@@ -34,7 +34,6 @@ dependencies {
     implementation "com.squareup.retrofit2:adapter-rxjava3:${rootProject.ext.retrofir_adapter_version}"
     implementation "io.reactivex.rxjava3:rxandroid:${rootProject.ext.rxandroid_version}"
     implementation "io.reactivex.rxjava3:rxjava:${rootProject.ext.rxjava_version}"
-    implementation "com.squareup.okhttp3:logging-interceptor:${rootProject.ext.log_interceptor_version}"
 }
 repositories {
     mavenCentral()

@@ -1,9 +1,8 @@
-@file:Suppress("DEPRECATION")
-
 package net.ljb.kt.client
 
 import net.ljb.kt.HttpConfig
 import net.ljb.kt.interceptor.AddGlobalParamInterceptor
+import net.ljb.kt.interceptor.HttpLoggingInterceptor
 import net.ljb.kt.utils.JsonParser
 import net.ljb.kt.utils.NetLog
 import okhttp3.Response
@@ -15,7 +14,6 @@ import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import okhttp3.MultipartBody
 import okhttp3.Callback
-import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -69,9 +67,9 @@ object HttpClient {
         val builder = OkHttpClient.Builder()
             .sslSocketFactory(createSSLSocketFactory(), TrustAllCerts())
             .hostnameVerifier(HostnameVerifier { _, _ -> true })
-            .addInterceptor(HttpLoggingInterceptor(HttpLoggingInterceptor.Logger {
+            .addInterceptor(HttpLoggingInterceptor {
                 NetLog.i(it)
-            }).setLevel(HttpLoggingInterceptor.Level.BODY))
+            }.setLevel(HttpLoggingInterceptor.Level.BODY))
             .addInterceptor(AddGlobalParamInterceptor())
             .connectTimeout(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS)
 
