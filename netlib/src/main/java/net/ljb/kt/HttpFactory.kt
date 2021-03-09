@@ -9,30 +9,18 @@ import java.util.*
 object HttpFactory {
 
     private val mProtocolMap = WeakHashMap<Class<*>, Any>()
-    private val mStrProtocolMap = WeakHashMap<Class<*>, Any>()
 
-    @Suppress("UNCHECKED_CAST")
-    fun <T> getProtocol(clazz: Class<T>, isStrClient: Boolean = false): T {
-        val map = if (isStrClient) mStrProtocolMap else mProtocolMap
-        return if (map.contains(clazz)) {
-            map[clazz] as T
-        } else {
-            val protocol = if (isStrClient) {
-                HttpClient.getStrRetrofit().create(clazz)
-            } else {
-                HttpClient.getRetrofit().create(clazz)
-            }
-            map[clazz] = protocol
-            protocol
-        }
+    fun <T> getProtocol(clazz: Class<T>): T {
+        return getProtocol(clazz, HttpClient.TAG_DEFAULT_CLIENT)
     }
 
+
     @Suppress("UNCHECKED_CAST")
-    fun <T> getProtocol(clazz: Class<T>): T {
+    fun <T> getProtocol(clazz: Class<T>, tag: String = HttpClient.TAG_DEFAULT_CLIENT): T {
         return if (mProtocolMap.contains(clazz)) {
             mProtocolMap[clazz] as T
         } else {
-            val protocol = HttpClient.getRetrofit().create(clazz)
+            val protocol = HttpClient.getRetrofitByTag(tag).create(clazz)
             mProtocolMap[clazz] = protocol
             protocol
         }

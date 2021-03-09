@@ -15,6 +15,8 @@
  */
 package net.ljb.kt.interceptor;
 
+import net.ljb.kt.utils.StringUtils;
+
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -202,7 +204,7 @@ public final class HttpLoggingInterceptor implements Interceptor {
                     if (sb.length() > 0) {
                         sb.delete(sb.length() - 1, sb.length());
                     }
-                    logger.log("| RequestParams: {" + sb.toString() + "}");
+                    logger.log("| RequestParams: {" + StringUtils.urlDecode(sb.toString()) + "}");
                 }
             } else if ("GET".equalsIgnoreCase(method)) {
                 // 打印所有get参数
@@ -215,7 +217,7 @@ public final class HttpLoggingInterceptor implements Interceptor {
                 if (sb.length() > 0) {
                     sb.delete(sb.length() - 1, sb.length());
                 }
-                logger.log("| RequestParams: {" + sb.toString() + "}");
+                logger.log("| RequestParams: {" + StringUtils.urlDecode(sb.toString()) + "}");
             }
 
             if (!logBody || !hasRequestBody) {
@@ -234,7 +236,7 @@ public final class HttpLoggingInterceptor implements Interceptor {
 
                 logger.log("");
                 if (isPlaintext(buffer)) {
-                    logger.log(buffer.readString(charset));
+//                    logger.log(buffer.readString(charset));
                     logger.log("--> END " + request.method()
                             + " (" + requestBody.contentLength() + "-byte body)");
                 } else {
@@ -292,7 +294,7 @@ public final class HttpLoggingInterceptor implements Interceptor {
 
                 if (contentLength != 0) {
                     logger.log("");
-                    logger.log("| ResponseResult: " + buffer.clone().readString(charset));
+                    logger.log("| ResponseResult: " + StringUtils.urlDecode(buffer.clone().readString(charset)));
                 }
 
                 logger.log("<-- END HTTP (" + buffer.size() + "-byte body)");

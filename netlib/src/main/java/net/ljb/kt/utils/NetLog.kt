@@ -30,7 +30,7 @@ object NetLog {
     /** 日志输出级别E  */
     const val LEVEL_ERROR = 5
 
-    private val DEBUG_LEVEL = if(HttpClient.getHttpConfig()?.isOpenLog == true) LEVEL_ALL else LEVEL_NONE
+    private var DEBUG_LEVEL = LEVEL_ALL
 
 
     /** 以级别为v 的形式输出LOG  */

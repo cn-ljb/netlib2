@@ -1,22 +1,21 @@
 package net.ljb.kt.interceptor
 
-import android.util.Log
 import net.ljb.kt.client.HttpClient
+import net.ljb.kt.utils.NetLog
 import okhttp3.Interceptor
 import okhttp3.Response
-import java.lang.Exception
 
 /**
  * Author:Ljb
  * Time:2018/8/9
  * There is a lot of misery in life
  **/
-class AddGlobalParamInterceptor : Interceptor {
+class AddGlobalParamInterceptor(private val tag: String) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
         try {
-            val paramMap = HttpClient.getHttpConfig()?.getCommParam()
-            val headerMap = HttpClient.getHttpConfig()?.getCommHeader()
+            val paramMap = HttpClient.getHttpConfig()[tag]?.getCommParam()
+            val headerMap = HttpClient.getHttpConfig()[tag]?.getCommHeader()
             val oldRequest = chain.request()
             val newRequestBuilder = oldRequest.newBuilder()
 
@@ -42,7 +41,7 @@ class AddGlobalParamInterceptor : Interceptor {
                 .build()
             return chain.proceed(newRequest)
         } catch (e: Exception) {
-            Log.e("net", "add params error", e)
+            NetLog.e(e)
             throw e
         }
     }

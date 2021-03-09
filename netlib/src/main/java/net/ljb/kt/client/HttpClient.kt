@@ -1,19 +1,17 @@
 package net.ljb.kt.client
 
+import android.annotation.SuppressLint
 import net.ljb.kt.HttpConfig
 import net.ljb.kt.interceptor.AddGlobalParamInterceptor
 import net.ljb.kt.interceptor.HttpLoggingInterceptor
 import net.ljb.kt.utils.JsonParser
 import net.ljb.kt.utils.NetLog
-import okhttp3.Response
-import okhttp3.Request
+import net.ljb.kt.utils.StringUtils
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
-import okhttp3.RequestBody
-import okhttp3.MultipartBody
-import okhttp3.Callback
+import okio.ByteString.Companion.decodeBase64
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -25,56 +23,66 @@ import javax.net.ssl.SSLContext
 import javax.net.ssl.SSLSocketFactory
 import javax.net.ssl.X509TrustManager
 
-
 /**
  * HttpClient
- * 1、可使用 OkHttp
- * 2、也可使用 Retrofit
  * Created by L on 2017/6/8.
  */
 object HttpClient {
 
+    const val TAG_DEFAULT_CLIENT = "default_client"
+
     private const val DEFAULT_TIME_OUT = 60000L
+
     private const val DEFAULT_DOWN_TIME_OUT = 60000L * 5
 
-    private var mHttpConfig: HttpConfig? = null
+    private var mConfigMap = HashMap<String, HttpConfig>()
+    private var mRetrofitMap = HashMap<String, Retrofit>()
 
     fun init(httpConfig: HttpConfig) {
-        mHttpConfig = httpConfig
+        if (httpConfig.tag.isEmpty()) {
+            httpConfig.tag = TAG_DEFAULT_CLIENT
+        }
+
+        mConfigMap[httpConfig.tag] = httpConfig
+
+        if (httpConfig.client == null) {
+            httpConfig.client = createOkHttpClient(httpConfig.tag)
+            mRetrofitMap[httpConfig.tag] = createRetrofit(httpConfig)
+        }
     }
 
-    fun getHttpConfig() = mHttpConfig
+    fun getHttpConfig() = mConfigMap
 
-    private val mRetrofit by lazy {
-        Retrofit.Builder()
-            .client(mHttpClient)
-            .baseUrl(mHttpConfig!!.baseUrl)
-            .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-    }
-    private val mStrRetrofit by lazy {
-        Retrofit.Builder()
-            .client(mHttpClient)
-            .baseUrl(mHttpConfig!!.baseUrl)
-            .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
-            .addConverterFactory(StringConverterFactory())
-            .build()
+
+    private val mLongTimeHttpClient by lazy {
+        createOkHttpLongClient(TAG_DEFAULT_CLIENT)
     }
 
-    private val mHttpClient by lazy {
+    /**
+     * 新建 OkHttpClient对象
+     * */
+    private fun createOkHttpClient(tag: String): OkHttpClient {
+
+        val httpConfig = mConfigMap[tag]!!
 
         val builder = OkHttpClient.Builder()
             .sslSocketFactory(createSSLSocketFactory(), TrustAllCerts())
             .hostnameVerifier(HostnameVerifier { _, _ -> true })
             .addInterceptor(HttpLoggingInterceptor {
-                NetLog.i(it)
+                if (httpConfig.isOpenLog) {
+                    NetLog.i(it)
+                }
             }.setLevel(HttpLoggingInterceptor.Level.BODY))
-            .addInterceptor(AddGlobalParamInterceptor())
+            .addInterceptor(AddGlobalParamInterceptor(httpConfig.tag!!))
             .connectTimeout(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS)
 
+        //自定义拦截器
+        httpConfig.interceptors?.map {
+            builder.addInterceptor(it)
+        }
+
         //是否持久化cookie
-        mHttpConfig!!.commCookie?.run {
+        httpConfig.commCookie?.run {
             builder.cookieJar(object : CookieJar {
                 override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
                     if (cookies.isNullOrEmpty()) {
@@ -93,14 +101,47 @@ object HttpClient {
                 }
             })
         }
-        builder.build()
+
+        return builder.build()
     }
 
-    private val mLongTimeHttpClient by lazy {
-        OkHttpClient.Builder()
+    /**
+     * 新建Retrofit对象
+     * */
+    private fun createRetrofit(httpConfig: HttpConfig): Retrofit {
+        return Retrofit.Builder()
+            .client(httpConfig.client!!)
+            .baseUrl(httpConfig.baseUrl)
+            .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+    }
+
+    fun getHttpClient(tag: String = TAG_DEFAULT_CLIENT): OkHttpClient = mConfigMap[tag]!!.client!!
+
+    fun getLongHttpClient() = mLongTimeHttpClient
+
+    /**
+     * 通过tag获取Retrofit对象
+     * */
+    fun getRetrofitByTag(tag: String): Retrofit {
+        if (mConfigMap[tag] == null) {
+            throw IllegalStateException("not found config by tag '$tag'")
+        }
+
+        if (mRetrofitMap[tag] == null) {
+            throw IllegalStateException("not found retrofit by tag '$tag'")
+        }
+
+        return mRetrofitMap[tag]!!
+    }
+
+    private fun createOkHttpLongClient(tag: String): OkHttpClient {
+        val httpConfig = mConfigMap[tag]!!
+        return OkHttpClient.Builder()
             .sslSocketFactory(createSSLSocketFactory(), TrustAllCerts())
             .hostnameVerifier(HostnameVerifier { _, _ -> true })
-            .addInterceptor(AddGlobalParamInterceptor())
+            .addInterceptor(AddGlobalParamInterceptor(httpConfig.tag))
             .connectTimeout(DEFAULT_DOWN_TIME_OUT, TimeUnit.MILLISECONDS)
             .readTimeout(DEFAULT_DOWN_TIME_OUT, TimeUnit.MILLISECONDS)
             .build()
@@ -114,10 +155,12 @@ object HttpClient {
 
     private class TrustAllCerts : X509TrustManager {
 
+        @SuppressLint("TrustAllX509TrustManager")
         @Throws(CertificateException::class)
         override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {
         }
 
+        @SuppressLint("TrustAllX509TrustManager")
         @Throws(CertificateException::class)
         override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {
         }
@@ -126,79 +169,6 @@ object HttpClient {
             return arrayOfNulls(0)
         }
     }
-
-    fun getHttpClient(): OkHttpClient = mHttpClient
-
-    fun getLongHttpClient() = mLongTimeHttpClient
-
-    /**
-     * Retrofit
-     * */
-    fun getRetrofit(): Retrofit = mRetrofit
-
-    /**
-     * StrRetrofit
-     * */
-    fun getStrRetrofit(): Retrofit = mStrRetrofit
-
-    /**
-     * 同步
-     * */
-    fun execute(request: Request): Response = mHttpClient.newCall(request).execute()
-
-    /**
-     * 异步
-     * */
-    fun enqueue(request: Request, responseCallback: Callback) =
-        mHttpClient.newCall(request).enqueue(responseCallback)
-
-    /**
-     * 创建Request
-     * */
-    fun getRequest(url: String, method: HttpMethod, params: Map<String, String>?): Request {
-        val builder = Request.Builder()
-        if (HttpMethod.GET == method) {
-            builder.url(initGetRequest(url, params ?: HashMap())).get()
-        } else if (HttpMethod.POST == method) {
-            builder.url(url).post(initRequestBody(params ?: HashMap()))
-        } else if (HttpMethod.PUT == method) {
-            builder.url(url).put(initRequestBody(params ?: HashMap()))
-        } else if (HttpMethod.DELETE == method) {
-            if (params == null || params.isEmpty()) {
-                builder.url(url).delete()
-            } else {
-                builder.url(url).delete(initRequestBody(params))
-            }
-        }
-        return builder.build()
-    }
-
-
-    /**
-     * 创建Body请求体
-     * */
-    private fun initRequestBody(params: Map<String, String>): RequestBody {
-        val bodyBuilder = MultipartBody.Builder().setType(MultipartBody.FORM)
-        params.map { bodyBuilder.addFormDataPart(it.key, it.value) }
-        return bodyBuilder.build()
-    }
-
-
-    /**
-     * 创建Get链接
-     * */
-    private fun initGetRequest(url: String, params: Map<String, String>): String {
-        return StringBuilder(url).apply {
-            if (params.isNotEmpty()) {
-                append("?")
-                params.map {
-                    append(it.key).append("=").append(it.value).append("&")
-                }
-                delete(length - "&".length, length)
-            }
-        }.toString()
-    }
-
 
 }
 
