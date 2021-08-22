@@ -8,8 +8,8 @@ import kotlin.collections.ArrayList
 
 class HttpConfig private constructor(
     val baseUrl: String,
-    private val commHeader: ((headers: Map<String, String>) -> Unit)?,
-    private val commParam: ((params: Map<String, String>) -> Unit)?,
+    private val commHeader: ((headers: MutableMap<String, String>) -> Unit)?,
+    private val commParam: ((params: MutableMap<String, String>) -> Unit)?,
     val commCookie: ICommCookie?,
     val isOpenLog: Boolean,
     var tag: String,
@@ -23,14 +23,14 @@ class HttpConfig private constructor(
         fun loadCookie(host: String): String?
     }
 
-    fun getCommParam(): Map<String, String>? {
+    fun getCommParam(): MutableMap<String, String>? {
         if (commParam == null) return null
-        val map = HashMap<String, String>()
+        val MutableMap = HashMap<String, String>()
         commParam.invoke(map)
         return map
     }
 
-    fun getCommHeader(): Map<String, String>? {
+    fun getCommHeader(): MutableMap<String, String>? {
         if (commHeader == null) return null
         val map = HashMap<String, String>()
         commHeader.invoke(map)
@@ -40,8 +40,8 @@ class HttpConfig private constructor(
     class Builder(private val baseUrl: String) {
 
         private var openLog = false
-        private var commHeader: ((headers: Map<String, String>) -> Unit)? = null
-        private var commParam: ((params: Map<String, String>) -> Unit)? = null
+        private var commHeader: ((headers: MutableMap<String, String>) -> Unit)? = null
+        private var commParam: ((params: MutableMap<String, String>) -> Unit)? = null
         private var commCookie: ICommCookie? = null
         private var tag: String = HttpClient.TAG_DEFAULT_CLIENT
         private var interceptors: MutableList<Interceptor>? = null
@@ -51,12 +51,12 @@ class HttpConfig private constructor(
             return this
         }
 
-        fun addCommHeader(header: ((params: Map<String, String>) -> Unit)): Builder {
+        fun addCommHeader(header: ((params: MutableMap<String, String>) -> Unit)): Builder {
             commHeader = header
             return this
         }
 
-        fun addCommParam(param: ((params: Map<String, String>) -> Unit)): Builder {
+        fun addCommParam(param: ((params: MutableMap<String, String>) -> Unit)): Builder {
             commParam = param
             return this
         }
