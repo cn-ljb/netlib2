@@ -25,7 +25,7 @@ class HttpConfig private constructor(
 
     fun getCommParam(): MutableMap<String, String>? {
         if (commParam == null) return null
-        val MutableMap = HashMap<String, String>()
+        val map = HashMap<String, String>()
         commParam.invoke(map)
         return map
     }
