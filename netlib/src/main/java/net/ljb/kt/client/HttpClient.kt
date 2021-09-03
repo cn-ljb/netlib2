@@ -3,15 +3,13 @@ package net.ljb.kt.client
 import android.annotation.SuppressLint
 import net.ljb.kt.HttpConfig
 import net.ljb.kt.interceptor.AddGlobalParamInterceptor
-import net.ljb.kt.interceptor.HttpLoggingInterceptor
+import net.ljb.kt.interceptor.NetworkLoggingInterceptor
 import net.ljb.kt.utils.JsonParser
 import net.ljb.kt.utils.NetLog
-import net.ljb.kt.utils.StringUtils
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import okhttp3.OkHttpClient
-import okio.ByteString.Companion.decodeBase64
 import retrofit2.Retrofit
 import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory
 import retrofit2.converter.gson.GsonConverterFactory
@@ -68,18 +66,22 @@ object HttpClient {
         val builder = OkHttpClient.Builder()
             .sslSocketFactory(createSSLSocketFactory(), TrustAllCerts())
             .hostnameVerifier(HostnameVerifier { _, _ -> true })
-            .addInterceptor(HttpLoggingInterceptor {
-                if (httpConfig.isOpenLog) {
-                    NetLog.i(it)
-                }
-            }.setLevel(HttpLoggingInterceptor.Level.BODY))
-            .addInterceptor(AddGlobalParamInterceptor(httpConfig.tag!!))
+            .addInterceptor(AddGlobalParamInterceptor(httpConfig.tag))
             .connectTimeout(DEFAULT_TIME_OUT, TimeUnit.MILLISECONDS)
 
         //自定义拦截器
         httpConfig.interceptors?.map {
             builder.addInterceptor(it)
         }
+
+        //最後添加Log拦截器
+        builder.addInterceptor(NetworkLoggingInterceptor(object : NetworkLoggingInterceptor.Logger {
+            override fun log(message: String?) {
+                if (httpConfig.isOpenLog) {
+                    NetLog.i(message)
+                }
+            }
+        }).setLevel(NetworkLoggingInterceptor.Level.BODY))
 
         //是否持久化cookie
         httpConfig.commCookie?.run {

@@ -1,10 +1,11 @@
 package net.ljb.kt.utils
 
-import android.text.TextUtils
 import java.io.UnsupportedEncodingException
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.util.*
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 /**
  * 字符串转换，使用包装类
@@ -57,6 +58,24 @@ object StringUtils {
         } catch (e: UnsupportedEncodingException) {
             throw AssertionError(e)
         }
+    }
+
+    @JvmStatic
+    fun unicodeToString(s: String): String {
+        var str = s
+        val pattern: Pattern = Pattern.compile("(\\\\u(\\p{XDigit}{4}))")
+        val matcher: Matcher = pattern.matcher(str)
+        var ch: Char
+        while (matcher.find()) {
+            //group 6728
+            val group: String = matcher.group(2)
+            //ch:'木' 26408
+            ch = group.toInt(16).toChar()
+            //group1 \u6728
+            val group1: String = matcher.group(1)
+            str = str.replace(group1, ch.toString() + "")
+        }
+        return str
     }
 
 }
