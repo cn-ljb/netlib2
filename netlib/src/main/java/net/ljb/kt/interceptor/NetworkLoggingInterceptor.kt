@@ -9,6 +9,7 @@ import java.io.EOFException
 import java.io.IOException
 import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
+import net.ljb.kt.utils.JsonParser
 
 
 open class NetworkLoggingInterceptor @JvmOverloads constructor(private val logger: Logger = Logger.DEFAULT) :
@@ -164,7 +165,8 @@ open class NetworkLoggingInterceptor @JvmOverloads constructor(private val logge
                     }
                     logger.log("| RequestParams: {" + StringUtils.urlDecode(sb.toString()) + "}")
                 } else {
-                    logger.log("| RequestParams: {" + StringUtils.urlDecode(requestBody.toString()) + "}")
+                    //logger.log("| RequestParams: {" + StringUtils.urlDecode(requestBody.toString()) + "}")
+                    logger.log("| RequestParams: ${JsonParser.toJson(requestBody!!)}")
                 }
             } else if ("GET".equals(method, ignoreCase = true)) {
                 // 打印所有get参数
